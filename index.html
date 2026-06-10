@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Particle River</title>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&display=swap");
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; }
+  body { background: #000; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #logo-wrap {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 36vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #logo {
+    max-width: 260px;
+    width: 22vw;
+    min-width: 120px;
+    object-fit: contain;
+    animation: fadeIn 1.2s ease forwards;
+    opacity: 0;
+  }
+  @keyframes fadeIn { to { opacity: 1; } }
+  #nav {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: min(900px, 82vw);
+    transform: translate(-50%, -50%);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: clamp(28px, 4vw, 64px);
+    pointer-events: none;
+    z-index: 10;
+  }
+  .nav-group {
+    position: relative;
+    justify-self: center;
+    text-align: left;
+    pointer-events: all;
+    opacity: 0;
+    animation: fadeIn 1.6s ease forwards;
+  }
+  .nav-group:nth-child(1) { animation-delay: 0.4s; }
+  .nav-group:nth-child(2) { animation-delay: 0.7s; }
+  .nav-group:nth-child(3) { animation-delay: 1.0s; }
+  .nav-trigger,
+  .nav-menu a {
+    display: inline-block;
+    text-align: left;
+    line-height: 1.875;
+    text-decoration: none;
+    font-family: 'SF Mono', 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+    font-size: clamp(9px, 1.1vw, 15px);
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    color: rgba(210, 210, 215, 0.82);
+    text-transform: uppercase;
+    transition: color 0.3s ease, text-shadow 0.3s ease, opacity 0.25s ease, transform 0.25s ease;
+    text-shadow: 0 0 12px rgba(180,180,190,0.25);
+  }
+  .nav-trigger {
+    cursor: default;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .nav-group::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: 18px;
+  }
+  .nav-group:hover .nav-trigger,
+  .nav-menu a:hover {
+    color: rgba(255, 255, 255, 1);
+    text-shadow: 0 0 18px rgba(255,255,255,0.92), 0 0 48px rgba(255,255,255,0.42);
+  }
+  .nav-menu {
+    position: absolute;
+    top: calc(100% + 14px);
+    left: 0;
+    transform: translateX(0);
+    min-width: max-content;
+    display: grid;
+    gap: 18px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease;
+  }
+  .nav-group:hover .nav-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+    transform: translateX(0) translateY(0);
+  }
+  .nav-menu a {
+    opacity: 0.9;
+    white-space: nowrap;
+  }
+  .nav-menu a:hover {
+    opacity: 1;
+  }
+  @media (max-width: 700px) {
+    #nav {
+      width: min(440px, 88vw);
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    .nav-group {
+      justify-self: start;
+    }
+    .nav-menu {
+      position: static;
+      transform: none;
+      margin-top: 12px;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: all;
+    }
+    .nav-group:hover .nav-menu {
+      transform: none;
+    }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="logo-wrap">
+  <img id="logo"
+    src="https://images.squarespace-cdn.com/content/v1/681ea18dd168a935c26295bd/f173dc58-2856-4e84-b647-8cf46ca113ad/phonto-Photoroom.png?format=750w"
+    alt="Logo"
+  />
+</div>
+<nav id="nav">
+  <div class="nav-group">
+    <div class="nav-trigger">GAMES</div>
+    <div class="nav-menu">
+      <a href="https://raideniv.github.io/tetron/">TETRON</a>
+      <a href="https://raideniv.github.io/capsule_havoc/">CAPSULE HAVOC</a>
+      <a href="/osea">PROJECT OSEA</a>
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-trigger">AUDIO</div>
+    <div class="nav-menu">
+      <a href="https://raideniv.github.io/galaxy-visualizer/">GALAXY</a>
+      <a href="/vis">PARTICLE ACCELERATOR</a>
+      <a href="https://raideniv.github.io/beat_detective/">BEAT DETECTIVE</a>
+    </div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-trigger">TOOLS</div>
+    <div class="nav-menu">
+      <a href="https://projecttracker-production-19db.up.railway.app">TASKCOM</a>
+      <a href="/modeler">3D MODELER</a>
+      <a href="/audio-converter">AUDIO CONVERTER</a>
+      <a href="https://codex-production-4a6a.up.railway.app">CODEX</a>
+      <a href="/svg.html">SVG EDITOR</a>
+    </div>
+  </div>
+</nav>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.setClearColor(0x000000, 1);
+
+const scene = new THREE.Scene();
+let W = window.innerWidth;
+let H = window.innerHeight;
+const cam = new THREE.OrthographicCamera(-W / 2, W / 2, H / 2, -H / 2, 0.1, 1000);
+cam.position.z = 10;
+
+const PARTICLE_COUNT = 7200;
+const RIVER_CENTER_Y = 0;
+let RIVER_WIDTH = H * 0.12;
+
+const CORE = new THREE.Color(0xb8ffff);
+const MID  = new THREE.Color(0x38d8ff);
+const GLOW = new THREE.Color(0x008cff);
+
+const positions     = new Float32Array(PARTICLE_COUNT * 3);
+const trailPositions = new Float32Array(PARTICLE_COUNT * 3);
+const sizes         = new Float32Array(PARTICLE_COUNT);
+const trailSizes    = new Float32Array(PARTICLE_COUNT);
+const alphas        = new Float32Array(PARTICLE_COUNT);
+const trailAlpha    = new Float32Array(PARTICLE_COUNT);
+const speeds        = new Float32Array(PARTICLE_COUNT);
+const offsets       = new Float32Array(PARTICLE_COUNT);
+const driftFreq     = new Float32Array(PARTICLE_COUNT);
+const driftAmp      = new Float32Array(PARTICLE_COUNT);
+const heat          = new Float32Array(PARTICLE_COUNT);
+const repulseGlow   = new Float32Array(PARTICLE_COUNT);
+const laneT         = new Float32Array(PARTICLE_COUNT);
+const velX          = new Float32Array(PARTICLE_COUNT);
+const velY          = new Float32Array(PARTICLE_COUNT);
+const depthScale    = new Float32Array(PARTICLE_COUNT);
+const depthAlpha    = new Float32Array(PARTICLE_COUNT);
+const turbulenceMix = new Float32Array(PARTICLE_COUNT);
+
+function rand(min, max) { return min + Math.random() * (max - min); }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function smoothstep(edge0, edge1, x) {
+  const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+function worldXFromClient(x) { return x - W / 2; }
+function worldYFromClient(y) { return -(y - H / 2); }
+function centeredLaneBias() {
+  // Logarithmic centering: density ∝ 1/(1 + t*(base-1))
+  // base = how many times denser the center is vs the edge
+  const sign = Math.random() < 0.5 ? -1 : 1;
+  const u = Math.random(); // uniform [0, 1]
+  const base = 2000; // ~2000x more particles at center than edge
+  const t = (Math.pow(base, u) - 1) / (base - 1); // log-distributed in [0, 1]
+  return sign * t;
+}
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  positions[i * 3 + 0] = rand(-W / 2, W / 2);
+
+  const t = centeredLaneBias();
+  laneT[i] = t;
+
+  const layerRoll = Math.random();
+  let depth;
+  if (layerRoll < 0.28) depth = rand(0.62, 0.82);
+  else if (layerRoll < 0.75) depth = rand(0.90, 1.08);
+  else depth = rand(1.16, 1.42);
+
+  depthScale[i] = depth;
+  depthAlpha[i] = clamp(0.55 + (depth - 0.62) / 0.8 * 0.45, 0.45, 1.05);
+  turbulenceMix[i] = rand(0.75, 1.25);
+
+  const y = laneT[i] * RIVER_WIDTH * 0.5 + RIVER_CENTER_Y;
+  positions[i * 3 + 1] = y;
+  positions[i * 3 + 2] = 0;
+  trailPositions[i * 3 + 0] = positions[i * 3 + 0];
+  trailPositions[i * 3 + 1] = y;
+  trailPositions[i * 3 + 2] = -0.05;
+
+  const distRatio = Math.abs(t);
+  sizes[i] = rand(1.35, 4.85) * (1 - distRatio * 0.58) * depth;
+  trailSizes[i] = sizes[i] * (1.2 + depth * 0.55);
+  alphas[i] = rand(0.14, 0.82) * (1 - distRatio * 0.66) * depthAlpha[i];
+  speeds[i] = rand(58, 210) * (1 - distRatio * 0.52) * (0.82 + depth * 0.28);
+
+  offsets[i] = rand(0, Math.PI * 2);
+  driftFreq[i] = rand(0.26, 1.18) * (0.86 + depth * 0.18);
+  driftAmp[i] = rand(0.3, 1.8) * (1 - distRatio * 0.4) * (0.8 + depth * 0.24);
+}
+
+const geometry = new THREE.BufferGeometry();
+geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+geometry.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
+geometry.setAttribute('heat', new THREE.BufferAttribute(heat, 1));
+geometry.setAttribute('repulseGlow', new THREE.BufferAttribute(repulseGlow, 1));
+
+const trailGeometry = new THREE.BufferGeometry();
+trailGeometry.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+trailGeometry.setAttribute('size', new THREE.BufferAttribute(trailSizes, 1));
+trailGeometry.setAttribute('alpha', new THREE.BufferAttribute(trailAlpha, 1));
+trailGeometry.setAttribute('repulseGlow', new THREE.BufferAttribute(repulseGlow, 1));
+
+const sharedUniforms = {
+  uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) },
+  uCoreColor: { value: CORE },
+  uMidColor: { value: MID },
+  uGlowColor: { value: GLOW }
+};
+
+const trailMaterial = new THREE.ShaderMaterial({
+  uniforms: sharedUniforms,
+  vertexShader: `
+    uniform float uPixelRatio;
+    attribute float size;
+    attribute float alpha;
+    attribute float repulseGlow;
+    varying float vAlpha;
+    varying float vRepulseGlow;
+    void main() {
+      vAlpha = alpha;
+      vRepulseGlow = repulseGlow;
+      vec4 mvp = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * uPixelRatio * (2.7 + vRepulseGlow * 5.625);
+      gl_Position = projectionMatrix * mvp;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uCoreColor;
+    uniform vec3 uMidColor;
+    uniform vec3 uGlowColor;
+    varying float vAlpha;
+    varying float vRepulseGlow;
+    void main() {
+      vec2 uv = gl_PointCoord - vec2(0.5);
+      float d = length(uv);
+      if (d > 0.5) discard;
+      float soft = pow(max(0.0, 1.0 - d / 0.5), 2.6);
+      vec3 col = mix(uGlowColor, uMidColor, 0.12);
+      col = mix(col, uCoreColor, 0.04);
+      float a = vAlpha * soft * (0.6375 + vRepulseGlow * 2.08125);
+      gl_FragColor = vec4(col, a);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+
+const baseMaterial = new THREE.ShaderMaterial({
+  uniforms: sharedUniforms,
+  vertexShader: `
+    uniform float uPixelRatio;
+    attribute float size;
+    attribute float alpha;
+    attribute float heat;
+    attribute float repulseGlow;
+    varying float vAlpha;
+    varying float vHeat;
+    varying float vRepulseGlow;
+    void main() {
+      vAlpha = alpha;
+      vHeat = heat;
+      vRepulseGlow = repulseGlow;
+      vec4 mvp = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * uPixelRatio * (1.0 + vRepulseGlow * 2.25);
+      gl_Position = projectionMatrix * mvp;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uCoreColor;
+    uniform vec3 uMidColor;
+    uniform vec3 uGlowColor;
+    varying float vAlpha;
+    varying float vHeat;
+    varying float vRepulseGlow;
+    void main() {
+      vec2 uv = gl_PointCoord - vec2(0.5);
+      float d = length(uv);
+      if (d > 0.5) discard;
+
+      float core = smoothstep(0.22, 0.0, d);
+      float body = smoothstep(0.50, 0.06, d);
+      float halo = smoothstep(0.50, 0.24, d);
+
+      vec3 coldColor = mix(vec3(0.18, 0.18, 0.20), vec3(0.58, 0.58, 0.62), body);
+      vec3 hotColor = uGlowColor;
+      hotColor = mix(hotColor, uMidColor, smoothstep(0.42, 0.22, d));
+      hotColor = mix(hotColor, uCoreColor, smoothstep(0.16, 0.0, d));
+
+      vec3 col = mix(coldColor, hotColor, vHeat);
+      col += uGlowColor * halo * vRepulseGlow * 2.3625;
+      col += uCoreColor * core * vRepulseGlow * 2.925;
+      col += uMidColor * body * vRepulseGlow * 0.9;
+
+      float a = vAlpha * (body + halo * 0.2 + vRepulseGlow * halo * 0.84375 + core * vRepulseGlow * 1.125);
+      gl_FragColor = vec4(col, a);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+
+const glowMaterial = new THREE.ShaderMaterial({
+  uniforms: sharedUniforms,
+  vertexShader: `
+    uniform float uPixelRatio;
+    attribute float size;
+    attribute float alpha;
+    attribute float repulseGlow;
+    varying float vAlpha;
+    varying float vRepulseGlow;
+    void main() {
+      vAlpha = alpha;
+      vRepulseGlow = repulseGlow;
+      vec4 mvp = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * uPixelRatio * (4.5 + vRepulseGlow * 16.875);
+      gl_Position = projectionMatrix * mvp;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uCoreColor;
+    uniform vec3 uMidColor;
+    uniform vec3 uGlowColor;
+    varying float vAlpha;
+    varying float vRepulseGlow;
+    void main() {
+      vec2 uv = gl_PointCoord - vec2(0.5);
+      float d = length(uv);
+      if (d > 0.5) discard;
+      float glow = pow(max(0.0, 1.0 - d / 0.5), 2.2);
+      float softness = smoothstep(0.50, 0.0, d);
+      float g = pow(vRepulseGlow, 1.3);
+      vec3 glowCol = mix(uGlowColor, uMidColor, 0.10);
+      glowCol = mix(glowCol, uCoreColor, 0.03);
+      float a = vAlpha * glow * softness * g * 3.825;
+      gl_FragColor = vec4(glowCol, a);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending
+});
+
+const trailParticles = new THREE.Points(trailGeometry, trailMaterial);
+const glowParticles = new THREE.Points(geometry, glowMaterial);
+const particles = new THREE.Points(geometry, baseMaterial);
+trailParticles.renderOrder = -1;
+glowParticles.renderOrder = 0;
+particles.renderOrder = 1;
+scene.add(trailParticles);
+scene.add(glowParticles);
+scene.add(particles);
+
+const vigGeo = new THREE.PlaneGeometry(W, H);
+const vigMat = new THREE.ShaderMaterial({
+  vertexShader: `void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform vec2 res;
+    void main(){
+      vec2 uv = gl_FragCoord.xy / res;
+      vec2 c = uv - 0.5;
+      float v = smoothstep(0.0, 0.55, length(c * vec2(1.0, 1.8)));
+      gl_FragColor = vec4(0.0, 0.0, 0.0, v * 0.7);
+    }
+  `,
+  uniforms: { res: { value: new THREE.Vector2(W, H) } },
+  transparent: true,
+  depthWrite: false,
+});
+const vigMesh = new THREE.Mesh(vigGeo, vigMat);
+vigMesh.position.z = 1;
+scene.add(vigMesh);
+
+const mouse = { x: 99999, y: 99999 };
+const MOUSE_REPEL_RADIUS = 130;
+const MOUSE_REPEL_FORCE = 78750;
+const HEAT_RADIUS = 200;
+const DAMPING = 0.80;
+
+const NAV_RADIUS = 260;
+const NAV_FORCE = 5600;
+const NAV_GLOW = 0.72;
+const hoveredNav = { index: -1 };
+const navGroups = Array.from(document.querySelectorAll('#nav .nav-group'));
+const navStrength = new Array(navGroups.length).fill(0);
+const navWorld = navGroups.map(() => ({ x: 0, y: 0 }));
+navGroups.forEach((group, index) => {
+  group.addEventListener('mouseenter', () => { hoveredNav.index = index; });
+  group.addEventListener('mouseleave', () => {
+    if (hoveredNav.index === index) hoveredNav.index = -1;
+  });
+});
+function updateNavWorldPositions() {
+  navGroups.forEach((group, index) => {
+    const trigger = group.querySelector('.nav-trigger');
+    const menu = group.querySelector('.nav-menu');
+    const triggerRect = trigger.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const left = Math.min(triggerRect.left, menuRect.left);
+    const right = Math.max(triggerRect.right, menuRect.right);
+    const top = triggerRect.top;
+    const bottom = menuRect.bottom;
+    navWorld[index].x = worldXFromClient((left + right) * 0.5);
+    navWorld[index].y = worldYFromClient((top + bottom) * 0.5);
+  });
+}
+updateNavWorldPositions();
+
+const shockwaves = [];
+const MAX_SHOCKWAVES = 6;
+const SHOCK_SPEED = 680;
+const SHOCK_WIDTH = 90;
+const SHOCK_FORCE = 26000;
+window.addEventListener('click', (e) => {
+  shockwaves.push({
+    x: worldXFromClient(e.clientX),
+    y: worldYFromClient(e.clientY),
+    radius: 0,
+    life: 1.0
+  });
+  if (shockwaves.length > MAX_SHOCKWAVES) shockwaves.shift();
+});
+
+window.addEventListener('mousemove', (e) => {
+  mouse.x = worldXFromClient(e.clientX);
+  mouse.y = worldYFromClient(e.clientY);
+});
+window.addEventListener('mouseleave', () => {
+  mouse.x = 99999;
+  mouse.y = 99999;
+  hoveredNav.index = -1;
+});
+
+let lastTime = performance.now();
+
+function resetParticle(i, widthScale) {
+  positions[i * 3 + 0] = -W / 2 - 10 - Math.random() * 30;
+  velX[i] = 0;
+  velY[i] = 0;
+  heat[i] = 0;
+  repulseGlow[i] = 0;
+  trailAlpha[i] = 0;
+  laneT[i] = centeredLaneBias();
+  const targetY = RIVER_CENTER_Y + laneT[i] * RIVER_WIDTH * 0.5 * widthScale;
+  positions[i * 3 + 1] = targetY;
+  trailPositions[i * 3 + 0] = positions[i * 3 + 0];
+  trailPositions[i * 3 + 1] = targetY;
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+  const t = now / 1000;
+
+  const breathScale = 1.0 + Math.sin(t * 0.22) * 0.10;
+
+  for (let i = shockwaves.length - 1; i >= 0; i--) {
+    const w = shockwaves[i];
+    w.radius += SHOCK_SPEED * dt;
+    w.life -= dt * 0.42;
+    if (w.life <= 0 || w.radius > Math.max(W, H) * 1.3) shockwaves.splice(i, 1);
+  }
+
+  for (let i = 0; i < navStrength.length; i++) {
+    const target = hoveredNav.index === i ? 1 : 0;
+    navStrength[i] += (target - navStrength[i]) * Math.min(dt * 8, 1);
+  }
+
+  const pos = geometry.attributes.position.array;
+  const tPos = trailGeometry.attributes.position.array;
+  const heatArr = geometry.attributes.heat.array;
+  const glowArr = geometry.attributes.repulseGlow.array;
+  const tAlpha = trailGeometry.attributes.alpha.array;
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const idx = i * 3;
+    const px = pos[idx + 0];
+    const py = pos[idx + 1];
+
+    const mdx = px - mouse.x;
+    const mdy = py - mouse.y;
+    const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+
+    let targetGlow = 0;
+    let extraHeat = 0;
+
+    if (mdist < MOUSE_REPEL_RADIUS && mdist > 0.01) {
+      const strength = Math.pow(1 - mdist / MOUSE_REPEL_RADIUS, 1.5);
+      velX[i] += (mdx / mdist) * MOUSE_REPEL_FORCE * strength * dt;
+      velY[i] += (mdy / mdist) * MOUSE_REPEL_FORCE * strength * dt;
+      targetGlow = Math.max(targetGlow, strength);
+      extraHeat = Math.max(extraHeat, strength);
+    }
+
+    for (let n = 0; n < navWorld.length; n++) {
+      const s = navStrength[n];
+      if (s <= 0.001) continue;
+      const dx = navWorld[n].x - px;
+      const dy = navWorld[n].y - py;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < NAV_RADIUS && dist > 0.01) {
+        const falloff = Math.pow(1 - dist / NAV_RADIUS, 1.6) * s;
+        velX[i] += (dx / dist) * NAV_FORCE * falloff * dt * (0.92 + depthScale[i] * 0.08);
+        velY[i] += (dy / dist) * NAV_FORCE * falloff * dt * (0.92 + depthScale[i] * 0.08);
+        targetGlow = Math.max(targetGlow, falloff * NAV_GLOW);
+        extraHeat = Math.max(extraHeat, falloff * 0.65);
+      }
+    }
+
+    for (let s = 0; s < shockwaves.length; s++) {
+      const wave = shockwaves[s];
+      const dx = px - wave.x;
+      const dy = py - wave.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const ring = Math.abs(dist - wave.radius);
+      if (ring < SHOCK_WIDTH && dist > 0.01) {
+        const band = Math.pow(1 - ring / SHOCK_WIDTH, 2.0) * wave.life;
+        const waveForce = SHOCK_FORCE * band * dt;
+        velX[i] += (dx / dist) * waveForce;
+        velY[i] += (dy / dist) * waveForce;
+        targetGlow = Math.max(targetGlow, band * 1.1);
+        extraHeat = Math.max(extraHeat, band * 0.9);
+      }
+    }
+
+    for (let p = 0; p < 3; p++) {
+      const pxCenter = -W * 0.28 + p * (W * 0.28) + Math.sin(t * (0.22 + p * 0.07) + p * 1.7) * W * 0.12;
+      const pyCenter = Math.sin(t * (0.55 + p * 0.11) + p * 2.3) * RIVER_WIDTH * 0.18;
+      const radius = 140 + p * 28;
+      const dx = px - pxCenter;
+      const dy = py - pyCenter;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < radius && dist > 0.01) {
+        const swirl = Math.pow(1 - dist / radius, 1.75) * turbulenceMix[i];
+        const tx = -dy / dist;
+        const ty = dx / dist;
+        const swirlForce = (2200 + p * 450) * swirl * dt;
+        velX[i] += tx * swirlForce;
+        velY[i] += ty * swirlForce;
+      }
+    }
+
+    const targetHeat = mdist < HEAT_RADIUS ? Math.pow(1 - mdist / HEAT_RADIUS, 1.2) : 0;
+    heatArr[i] += ((Math.max(targetHeat, extraHeat)) - heatArr[i]) * Math.min(dt * 9.0, 1.0);
+
+    glowArr[i] += (targetGlow - glowArr[i]) * Math.min(dt * 20.0, 1.0);
+    glowArr[i] *= Math.max(0.0, 1.0 - dt * 0.72);
+
+    velX[i] *= DAMPING;
+    velY[i] *= DAMPING;
+
+    const spd = Math.sqrt(velX[i] * velX[i] + velY[i] * velY[i]);
+    const maxSpeed = 900 * (0.9 + depthScale[i] * 0.16);
+    if (spd > maxSpeed) {
+      velX[i] = velX[i] / spd * maxSpeed;
+      velY[i] = velY[i] / spd * maxSpeed;
+    }
+
+    pos[idx + 0] += (speeds[i] + velX[i]) * dt;
+    pos[idx + 1] += velY[i] * dt;
+
+    pos[idx + 1] += Math.sin(t * driftFreq[i] + offsets[i]) * driftAmp[i] * dt;
+
+    const targetLaneY = RIVER_CENTER_Y + laneT[i] * RIVER_WIDTH * 0.5 * breathScale;
+    pos[idx + 1] += (targetLaneY - pos[idx + 1]) * 0.33 * dt;
+
+    const trailLag = clamp(0.05 + spd / 1400, 0.06, 0.24);
+    tPos[idx + 0] += (pos[idx + 0] - tPos[idx + 0]) * trailLag;
+    tPos[idx + 1] += (pos[idx + 1] - tPos[idx + 1]) * trailLag;
+    const trailTarget = clamp((spd - 110) / 420, 0, 1) * (0.18 + glowArr[i] * 1.2) * alphas[i];
+    tAlpha[i] += (trailTarget - tAlpha[i]) * Math.min(dt * 12, 1);
+
+    if (pos[idx + 0] > W / 2 + 20) {
+      resetParticle(i, breathScale);
+    }
+  }
+
+  geometry.attributes.position.needsUpdate = true;
+  geometry.attributes.heat.needsUpdate = true;
+  geometry.attributes.repulseGlow.needsUpdate = true;
+  trailGeometry.attributes.position.needsUpdate = true;
+  trailGeometry.attributes.alpha.needsUpdate = true;
+
+  renderer.render(scene, cam);
+}
+
+window.addEventListener('resize', () => {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  RIVER_WIDTH = H * 0.12;
+
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(W, H, false);
+  sharedUniforms.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 2);
+
+  cam.left = -W / 2;
+  cam.right = W / 2;
+  cam.top = H / 2;
+  cam.bottom = -H / 2;
+  cam.updateProjectionMatrix();
+
+  const pos = geometry.attributes.position.array;
+  const tPos = trailGeometry.attributes.position.array;
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const idx = i * 3;
+    const laneY = RIVER_CENTER_Y + laneT[i] * RIVER_WIDTH * 0.5;
+    pos[idx + 1] = laneY;
+    tPos[idx + 1] = laneY;
+    pos[idx + 0] = clamp(pos[idx + 0], -W / 2 - 20, W / 2 + 20);
+    tPos[idx + 0] = pos[idx + 0];
+  }
+
+  vigMesh.geometry.dispose();
+  vigMesh.geometry = new THREE.PlaneGeometry(W, H);
+  vigMat.uniforms.res.value.set(W, H);
+  updateNavWorldPositions();
+  geometry.attributes.position.needsUpdate = true;
+  trailGeometry.attributes.position.needsUpdate = true;
+});
+
+setTimeout(updateNavWorldPositions, 50);
+setTimeout(updateNavWorldPositions, 400);
+animate();
+</script>
+</body>
+</html>
